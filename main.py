@@ -35,7 +35,7 @@ azure_apim_openai_client = AsyncAzureOpenAI(
     azure_endpoint=os.getenv("AZURE_APIM_OPENAI_ENDPOINT")
 )
 
-openai_client = azure_openai_client
+openai_client = azure_apim_openai_client
 set_default_openai_client(openai_client)
 set_tracing_export_api_key(os.getenv("OPENAI_API_KEY"))
 # Set up console tracing
@@ -69,6 +69,13 @@ def calculate_loan_payment(principal: float, interest_rate: float, years: int) -
         return principal / months
     else:
         return principal * monthly_rate * (1 + monthly_rate) ** months / ((1 + monthly_rate) ** months - 1)
+
+
+@function_tool
+def calculate_investment_return(principal: float, annual_return_rate: float, years: int) -> float:
+    """Calculate the future value of an investment."""
+    # Simple compound interest calculation
+    return principal * (1 + annual_return_rate / 100) ** years
 
 
 def banking_handoff_message_filter(handoff_message_data: HandoffInputData) -> HandoffInputData:
@@ -113,6 +120,7 @@ investment_specialist_agent = Agent(
         model="gpt-4o",
         openai_client=openai_client
     ),
+    tools=[calculate_investment_return],
 )
 
 customer_service_agent = Agent(
@@ -137,21 +145,24 @@ customer_service_agent = Agent(
 async def main():
     # Trace the entire run as a single workflow
     with trace(workflow_name="Banking Assistant Demo"):
+        print("\n=== Banking Assistant Demo ===\n")
+        
         # 1. Send a regular message to the general agent
+        print("Step 1: Initial greeting")
         result = await Runner.run(general_agent, input="Hi, I'd like to check my account balance.")
+        print(f"\nResponse: {result.final_output}\n")
 
-        print("Step 1 done")
-
-        # 2. Check account balance
+        # 2. Check account balance with customer service
+        print("\nStep 2: Checking account balance")
         result = await Runner.run(
             customer_service_agent,
             input=result.to_input_list()
             + [{"content": "Can you check the balance for account 1234?", "role": "user"}],
         )
-
-        print("Step 2 done")
+        print(f"\nResponse: {result.final_output}\n")
 
         # 3. Ask about loans (should trigger handoff to loan specialist)
+        print("\nStep 3: Loan inquiry (should trigger handoff to loan specialist)")
         result = await Runner.run(
             customer_service_agent,
             input=result.to_input_list()
@@ -162,11 +173,11 @@ async def main():
                 }
             ],
         )
-
-        print("Step 3 done")
+        print(f"\nResponse: {result.final_output}\n")
 
         # 4. Ask the loan specialist about payment calculations
-        stream_result = Runner.run_streamed(
+        print("\nStep 4: Loan payment calculation")
+        result = await Runner.run(
             customer_service_agent,
             input=result.to_input_list()
             + [
@@ -176,16 +187,31 @@ async def main():
                 }
             ],
         )
-        async for _ in stream_result.stream_events():
-            pass
+        print(f"\nResponse: {result.final_output}\n")
+        
+        # 5. Start a new conversation about investments (should trigger handoff to investment specialist)
+        print("\nStep 5: Investment inquiry (should trigger handoff to investment specialist)")
+        result = await Runner.run(
+            customer_service_agent,
+            input=[{"content": "I'm interested in investing some money. What options do you recommend?", "role": "user"}],
+        )
+        print(f"\nResponse: {result.final_output}\n")
+        
+        # 6. Ask about investment returns
+        print("\nStep 6: Investment return calculation")
+        result = await Runner.run(
+            customer_service_agent,
+            input=result.to_input_list()
+            + [
+                {
+                    "content": "If I invest $50,000 with an expected 7% annual return, how much would I have after 10 years?",
+                    "role": "user",
+                }
+            ],
+        )
+        print(f"\nResponse: {result.final_output}\n")
 
-        print("Step 4 done")
-
-    print("\n===Final messages===\n")
-
-    # 5. Print the messages to see what happened
-    for item in stream_result.to_input_list():
-        print(json.dumps(item, indent=2))
+    print("\n=== Demo Complete ===\n")
 
 
 if __name__ == "__main__":

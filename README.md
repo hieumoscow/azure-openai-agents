@@ -52,6 +52,26 @@ Alternatively, you can connect via Azure API Management with these variables:
 - `AZURE_APIM_OPENAI_ENDPOINT`: Your APIM endpoint URL
 - `AZURE_APIM_OPENAI_DEPLOYMENT`: The model deployment name in APIM
 
+## Known Issues
+
+Note that at the time of writing this article, there is an ongoing bug where OpenAI Agent SDK is fetching the old `input_tokens`, `output_tokens` instead of the new `prompt_tokens` & `completion_tokens` returned by newer ChatCompletion APIs. 
+
+Thus you would need to manually update in `agents/run.py` file to make this work per:
+- https://github.com/openai/openai-agents-python/pull/65/files
+- https://github.com/openai/openai-agents-python/pull/61/files
+
+The change involves replacing:
+```python
+input_tokens=event.response.usage.input_tokens,
+output_tokens=event.response.usage.output_tokens,
+```
+
+With:
+```python
+input_tokens=event.response.usage.prompt_tokens,
+output_tokens=event.response.usage.completion_tokens,
+```
+
 ## Sample Conversation Flow
 
 1. User asks a general banking question
