@@ -1,22 +1,18 @@
 from __future__ import annotations
 import logging
-
-import json
-import random
 import os
 import asyncio
 from dotenv import load_dotenv
-
 
 from openai import AsyncAzureOpenAI
 from agents import Agent, HandoffInputData, Runner, function_tool, handoff, trace, set_default_openai_client, set_tracing_disabled, OpenAIChatCompletionsModel, set_tracing_export_api_key, add_trace_processor
 from agents.tracing.processors import ConsoleSpanExporter, BatchTraceProcessor
 from agents.extensions import handoff_filters
+import logfire
 
-# logging.basicConfig(
-#     level=logging.INFO,
-#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-# )
+# logging.basicConfig(level=logging.INFO, 
+#                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# logger = logging.getLogger(__name__)
 # https://github.com/openai/openai-agents-python/pull/61/files
 
 load_dotenv()
@@ -35,14 +31,26 @@ azure_apim_openai_client = AsyncAzureOpenAI(
     azure_endpoint=os.getenv("AZURE_APIM_OPENAI_ENDPOINT")
 )
 
-openai_client = azure_apim_openai_client
+openai_client = azure_openai_client
 set_default_openai_client(openai_client)
+
+os.environ["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"]= "http://0.0.0.0:4318/v1/traces"
+
+# Set the API key for trace export
 set_tracing_export_api_key(os.getenv("OPENAI_API_KEY"))
 # Set up console tracing
 # console_exporter = ConsoleSpanExporter()
 # console_processor = BatchTraceProcessor(console_exporter)
 # add_trace_processor(console_processor)
-set_tracing_disabled(False)  # Enable tracing
+set_tracing_disabled(False)
+
+# Configure logfire
+logfire.configure(
+    service_name='banking-agent-service',
+    send_to_logfire=False,
+    distributed_tracing=True
+)
+logfire.instrument_openai_agents()
 
 @function_tool
 def check_account_balance(account_id: str) -> float:
