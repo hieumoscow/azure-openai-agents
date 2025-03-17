@@ -3,3 +3,4 @@ venv
 files
 blog.html
 blog2.html
+otel-collector-config.yaml

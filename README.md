@@ -80,8 +80,9 @@ output_tokens=event.response.usage.completion_tokens,
 4. If the question is about investments, the conversation is handed off to the Investment Specialist
 
 
-
 ## Monitoring with Application Insights
+
+![OpenAIAgentsSDKAppInsights](./assets/OpenAIAgentsSDKAppInsights.gif)
 
 A detailed blog post about monitoring the OpenAI Agents SDK with Application Insights has been published on the Microsoft Tech Community:
 
