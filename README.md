@@ -79,11 +79,9 @@ output_tokens=event.response.usage.completion_tokens,
 3. The Loan Specialist can calculate loan payments and provide detailed loan information
 4. If the question is about investments, the conversation is handed off to the Investment Specialist
 
-## License
 
-This project is for demonstration purposes only.
 
-## Blog Post
+## Monitoring with Application Insights
 
 A detailed blog post about monitoring the OpenAI Agents SDK with Application Insights has been published on the Microsoft Tech Community:
 
@@ -130,3 +128,7 @@ This repository contains a working example of the concepts discussed in the blog
 - **Span Name Fix**: The `fixed_openai_agents.py` file contains a workaround for the span name display issue in Application Insights, ensuring that spans show meaningful names instead of message templates.
 
 To fully implement monitoring in your own projects, refer to the blog post for detailed instructions and best practices.
+
+## License
+
+This project is for demonstration purposes only.
