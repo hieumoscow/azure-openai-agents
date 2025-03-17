@@ -82,3 +82,51 @@ output_tokens=event.response.usage.completion_tokens,
 ## License
 
 This project is for demonstration purposes only.
+
+## Blog Post
+
+A detailed blog post about monitoring the OpenAI Agents SDK with Application Insights has been published on the Microsoft Tech Community:
+
+- [Monitoring OpenAI Agents SDK with Application Insights](https://techcommunity.microsoft.com/blog/azure-ai-services-blog/monitoring-openai-agents-sdk-with-application-insights/4393949)
+
+The blog post covers:
+- How to use the Pydantic Logfire SDK to instrument OpenAI Agents
+- Setting up the OpenTelemetry Collector to forward telemetry to Azure Application Insights
+- Auto-instrumentation options for AKS and Azure Container Apps
+- Known issues and workarounds for span name display in Application Insights
+
+### Implementation Details
+
+This repository contains a working example of the concepts discussed in the blog post. Key implementation highlights:
+
+- **Logfire Integration**: The `main.py` file demonstrates how to configure Logfire for OpenAI Agents instrumentation with the following code:
+  ```python
+  # Configure logfire
+  logfire.configure(
+      service_name='banking-agent-service',
+      send_to_logfire=False,
+      distributed_tracing=True
+  )
+  logfire.instrument_openai_agents()
+  ```
+
+- **OpenTelemetry Configuration**: The `otel-collector-config.yaml` file shows how to set up an OpenTelemetry Collector to forward traces to Azure Application Insights:
+  ```yaml
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: "0.0.0.0:4318"
+  exporters:
+    azuremonitor:
+      connection_string: ""  # Add your Application Insights connection string here
+  service:
+    pipelines:
+      traces:
+        receivers: [otlp]
+        exporters: [azuremonitor]
+  ```
+
+- **Span Name Fix**: The `fixed_openai_agents.py` file contains a workaround for the span name display issue in Application Insights, ensuring that spans show meaningful names instead of message templates.
+
+To fully implement monitoring in your own projects, refer to the blog post for detailed instructions and best practices.
