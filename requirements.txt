@@ -2,3 +2,5 @@ openai
 openai-agents
 dotenv
 logfire >= 3.8.1
+aiohttp
+pyyaml
