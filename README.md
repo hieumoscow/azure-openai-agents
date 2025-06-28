@@ -1,6 +1,6 @@
 # Banking Agents Demo
 
-This project demonstrates the use of OpenAI's Agents framework to create a set of banking-themed conversational agents that can assist users with various banking-related inquiries.
+This project demonstrates the use of OpenAI's Agents framework to create a set of banking-themed conversational agents that can assist users with various banking-related inquiries. The application now includes comprehensive **Service Discovery** capabilities for robust, highly-available API communication.
 
 ## Features
 
@@ -8,6 +8,27 @@ This project demonstrates the use of OpenAI's Agents framework to create a set o
 - **Loan Specialist**: An agent focused on helping customers understand loan options and calculate payments
 - **Investment Specialist**: An agent that assists customers with investment options and portfolio management
 - **Customer Service Agent**: Handles general inquiries and directs customers to specialists as needed
+- **Service Discovery**: Advanced endpoint management with health monitoring, load balancing, and automatic failover
+
+## Service Discovery Architecture
+
+This application implements a comprehensive service discovery solution that addresses enterprise requirements for:
+
+✅ **Service discovery mechanism documented and implemented**  
+✅ **Uses service registry and health-based discovery**  
+✅ **Includes comprehensive health check configuration**  
+✅ **Documents load balancing and failover strategy**  
+
+### Key Service Discovery Features
+
+- **Multi-endpoint Configuration**: Support for primary, secondary, and backup Azure OpenAI endpoints
+- **Health Monitoring**: Continuous health checking with configurable intervals and thresholds
+- **Load Balancing**: Multiple algorithms including priority-based, round-robin, and weighted distribution
+- **Automatic Failover**: Circuit breaker pattern with automatic endpoint recovery
+- **APIM Integration**: Full support for Azure API Management gateway endpoints
+- **Runtime Configuration**: Update endpoints and configuration without service restarts
+
+For detailed information about the service discovery architecture, see [Service Discovery Documentation](docs/SERVICE_DISCOVERY.md).
 
 ## Agent Handoff System
 
@@ -20,6 +41,79 @@ The demo showcases the handoff functionality between agents:
 The agents have access to the following tools:
 - `check_account_balance`: Retrieves the balance for a given account number
 - `calculate_loan_payment`: Calculates monthly payments for a loan based on principal, interest rate, and term
+
+## Getting Started
+
+### Quick Start with Service Discovery
+
+1. **Clone this repository**
+   ```bash
+   git clone <repository-url>
+   cd azure-openai-agents
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Configure service discovery**
+   
+   Copy the sample environment file:
+   ```bash
+   cp .env.sample .env
+   ```
+   
+   Edit `.env` with your Azure OpenAI credentials:
+   ```bash
+   # Enable service discovery for production-grade resilience
+   SERVICE_DISCOVERY_ENABLED=true
+   
+   # Primary Azure OpenAI endpoint
+   AZURE_OPENAI_ENDPOINT=https://your-primary.openai.azure.com
+   AZURE_OPENAI_API_KEY=your_primary_api_key
+   
+   # Secondary endpoint for failover
+   AZURE_OPENAI_SECONDARY_ENDPOINT=https://your-secondary.openai.azure.com
+   AZURE_OPENAI_SECONDARY_KEY=your_secondary_api_key
+   
+   # Optional: APIM Gateway
+   AZURE_APIM_OPENAI_ENDPOINT=https://your-apim.azure-api.net/openai/api/
+   AZURE_APIM_OPENAI_SUBSCRIPTION_KEY=your_apim_subscription_key
+   ```
+
+4. **Run the application**
+   ```bash
+   python main.py
+   ```
+
+5. **Test service discovery** (optional)
+   ```bash
+   # Check service health
+   python -m service_discovery_client health-status
+   
+   # Run interactive demo
+   python demo_service_discovery.py
+   
+   # Run validation tests
+   python test_service_discovery.py
+   ```
+
+### Traditional Setup (without service discovery)
+
+For simple development or testing, you can use the traditional single-endpoint setup:
+
+```bash
+# Disable service discovery
+SERVICE_DISCOVERY_ENABLED=false
+
+# Single Azure OpenAI endpoint
+AZURE_OPENAI_API_KEY=your_api_key
+AZURE_OPENAI_ENDPOINT=https://your-aoai.openai.azure.com
+AZURE_OPENAI_DEPLOYMENT=gpt-4o
+```
+
+## Setup
 
 ## Setup
 
@@ -34,23 +128,182 @@ The agents have access to the following tools:
    python main.py
    ```
 
+## Service Discovery Commands
+
+The application includes several utility commands for managing and monitoring service discovery:
+
+### Health Status Monitoring
+```bash
+# Check health of all Azure OpenAI endpoints
+python -m service_discovery_client health-status azure_openai
+
+# Check health of APIM endpoints
+python -m service_discovery_client health-status azure_apim
+
+# Test specific endpoint connectivity
+python -m service_discovery_client test-endpoint azure_openai primary
+```
+
+### Configuration Management
+```bash
+# View current service discovery configuration
+python -m service_discovery_client show-config
+
+# Run comprehensive validation tests
+python test_service_discovery.py
+
+# Run interactive demo
+python demo_service_discovery.py
+```
+
+### Debugging
+```bash
+# Enable debug logging
+export LOG_LEVEL=DEBUG
+python main.py
+
+# Monitor real-time endpoint health
+watch -n 5 "python -m service_discovery_client health-status azure_openai"
+```
+
 ## Environment Variables
 
-The application supports two methods of connecting to Azure OpenAI:
+The application supports multiple methods of connecting to Azure OpenAI with enhanced service discovery capabilities:
 
-### Direct Azure OpenAI Connection
-The following environment variables are required for direct connection:
-- `AZURE_OPENAI_API_KEY`: Your Azure OpenAI API key
+### Service Discovery Configuration
+
+Enable service discovery for automatic endpoint management, health monitoring, and failover:
+
+```bash
+# Enable service discovery (recommended for production)
+SERVICE_DISCOVERY_ENABLED=true
+
+# Health check configuration
+HEALTH_CHECK_INTERVAL=30
+HEALTH_CHECK_TIMEOUT=10
+HEALTH_CHECK_RETRIES=3
+HEALTH_CHECK_FAILURE_THRESHOLD=3
+HEALTH_CHECK_SUCCESS_THRESHOLD=2
+
+# Load balancer configuration
+LOAD_BALANCER_ALGORITHM=priority_with_fallback
+LOAD_BALANCER_TIMEOUT=30
+LOAD_BALANCER_MAX_RETRIES=3
+
+# Circuit breaker configuration
+CIRCUIT_BREAKER_ENABLED=true
+CIRCUIT_BREAKER_FAILURE_THRESHOLD=5
+CIRCUIT_BREAKER_RECOVERY_TIMEOUT=60
+CIRCUIT_BREAKER_SUCCESS_THRESHOLD=3
+```
+
+### Primary Azure OpenAI Connection
+
+**Primary endpoint** (highest priority):
+- `AZURE_OPENAI_API_KEY`: Your primary Azure OpenAI API key
 - `AZURE_OPENAI_API_VERSION`: API version (e.g., "2024-08-01-preview")
-- `AZURE_OPENAI_ENDPOINT`: Your Azure OpenAI endpoint URL
+- `AZURE_OPENAI_ENDPOINT`: Your primary Azure OpenAI endpoint URL
 - `AZURE_OPENAI_DEPLOYMENT`: The model deployment name (e.g., "gpt-4o")
 
+### Secondary Azure OpenAI Endpoints (for Failover)
+
+**Secondary endpoint** (backup):
+- `AZURE_OPENAI_SECONDARY_ENDPOINT`: Your secondary Azure OpenAI endpoint URL
+- `AZURE_OPENAI_SECONDARY_KEY`: Your secondary Azure OpenAI API key
+- `AZURE_OPENAI_SECONDARY_DEPLOYMENT`: Secondary model deployment name
+
+**Backup endpoint** (tertiary):
+- `AZURE_OPENAI_BACKUP_ENDPOINT`: Your backup Azure OpenAI endpoint URL
+- `AZURE_OPENAI_BACKUP_KEY`: Your backup Azure OpenAI API key
+- `AZURE_OPENAI_BACKUP_DEPLOYMENT`: Backup model deployment name
+
 ### Azure API Management (APIM) Connection
-Alternatively, you can connect via Azure API Management with these variables:
-- `AZURE_APIM_OPENAI_SUBSCRIPTION_KEY`: Your APIM subscription key
+
+**Primary APIM Gateway**:
+- `AZURE_APIM_OPENAI_SUBSCRIPTION_KEY`: Your primary APIM subscription key
 - `AZURE_APIM_OPENAI_API_VERSION`: API version for APIM
-- `AZURE_APIM_OPENAI_ENDPOINT`: Your APIM endpoint URL
+- `AZURE_APIM_OPENAI_ENDPOINT`: Your primary APIM endpoint URL
 - `AZURE_APIM_OPENAI_DEPLOYMENT`: The model deployment name in APIM
+
+**Secondary APIM Gateway** (for failover):
+- `AZURE_APIM_SECONDARY_SUBSCRIPTION_KEY`: Your secondary APIM subscription key
+- `AZURE_APIM_SECONDARY_ENDPOINT`: Your secondary APIM endpoint URL
+
+### Legacy Configuration (Direct Connection)
+
+For backward compatibility, direct single-endpoint configuration is still supported:
+- `AZURE_OPENAI_API_KEY`: Your Azure OpenAI API key
+- `AZURE_OPENAI_API_VERSION`: API version
+- `AZURE_OPENAI_ENDPOINT`: Your Azure OpenAI endpoint URL
+- `AZURE_OPENAI_DEPLOYMENT`: The model deployment name
+
+## Service Discovery Usage
+
+### Basic Usage
+
+The application automatically uses service discovery when `SERVICE_DISCOVERY_ENABLED=true`. The system will:
+
+1. **Load all configured endpoints** from environment variables
+2. **Start health monitoring** for each endpoint
+3. **Select the best available endpoint** based on health and priority
+4. **Automatically failover** if the current endpoint becomes unhealthy
+5. **Continuously monitor** and recover endpoints as they become available
+
+### Health Monitoring
+
+Check the health status of all configured endpoints:
+
+```bash
+python -m service_discovery_client health-status azure_openai
+```
+
+Test connectivity to a specific endpoint:
+
+```bash
+python -m service_discovery_client test-endpoint azure_openai primary
+```
+
+View current configuration:
+
+```bash
+python -m service_discovery_client show-config
+```
+
+### Load Balancing Algorithms
+
+Configure the load balancing strategy with `LOAD_BALANCER_ALGORITHM`:
+
+- **priority_with_fallback**: Routes to highest priority healthy endpoint (recommended)
+- **round_robin**: Distributes requests evenly across healthy endpoints
+- **least_connections**: Routes to endpoint with fewest active connections
+- **weighted**: Distributes based on endpoint capacity weights
+
+### Circuit Breaker
+
+The circuit breaker pattern prevents cascade failures:
+
+- **Closed**: Normal operation, requests flow through
+- **Open**: Endpoint marked as failed, requests routed to other endpoints
+- **Half-Open**: Testing endpoint recovery with limited requests
+
+## Project Structure
+
+```
+azure-openai-agents/
+├── main.py                          # Main application entry point
+├── service_discovery.py             # Core service discovery implementation
+├── service_discovery_client.py      # Service discovery client adapter
+├── fixed_openai_agents.py          # OpenTelemetry instrumentation fixes
+├── test_service_discovery.py        # Comprehensive test suite
+├── demo_service_discovery.py        # Interactive demonstration
+├── requirements.txt                 # Python dependencies
+├── .env.sample                      # Environment configuration template
+├── docs/
+│   └── SERVICE_DISCOVERY.md        # Detailed service discovery documentation
+├── config/
+│   └── service_endpoints.yaml      # Example endpoint configuration
+└── otel-collector-config.yaml      # OpenTelemetry collector configuration
+```
 
 ## Known Issues
 

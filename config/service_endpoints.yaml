@@ -1,0 +1,161 @@
+# Service Endpoints Configuration
+# This file demonstrates how to configure multiple endpoints for service discovery
+
+azure_openai:
+  # Primary Azure OpenAI endpoint
+  - name: "primary"
+    endpoint: "https://primary.openai.azure.com"
+    api_key: "${AZURE_OPENAI_PRIMARY_KEY}"
+    priority: 1
+    weight: 10
+    health_check_url: "/v1/models"
+    timeout: 30
+    max_connections: 100
+    enabled: true
+    metadata:
+      region: "East US"
+      tier: "standard"
+      deployment: "gpt-4o"
+
+  # Secondary Azure OpenAI endpoint for failover
+  - name: "secondary"
+    endpoint: "https://secondary.openai.azure.com"
+    api_key: "${AZURE_OPENAI_SECONDARY_KEY}"
+    priority: 2
+    weight: 8
+    health_check_url: "/v1/models"
+    timeout: 30
+    max_connections: 80
+    enabled: true
+    metadata:
+      region: "West US"
+      tier: "standard"
+      deployment: "gpt-4o"
+
+  # Backup endpoint in different region
+  - name: "backup"
+    endpoint: "https://backup.openai.azure.com"
+    api_key: "${AZURE_OPENAI_BACKUP_KEY}"
+    priority: 3
+    weight: 5
+    health_check_url: "/v1/models"
+    timeout: 45
+    max_connections: 50
+    enabled: true
+    metadata:
+      region: "Europe West"
+      tier: "basic"
+      deployment: "gpt-4o"
+
+azure_apim:
+  # Primary APIM gateway
+  - name: "apim_primary"
+    endpoint: "https://api.company.com/openai"
+    api_key: "${AZURE_APIM_PRIMARY_SUBSCRIPTION_KEY}"
+    priority: 1
+    weight: 10
+    health_check_url: "/health"
+    timeout: 30
+    max_connections: 200
+    enabled: true
+    metadata:
+      gateway_type: "primary"
+      rate_limit: "1000/min"
+      caching_enabled: true
+
+  # Secondary APIM gateway for failover
+  - name: "apim_secondary"
+    endpoint: "https://api-backup.company.com/openai"
+    api_key: "${AZURE_APIM_SECONDARY_SUBSCRIPTION_KEY}"
+    priority: 2
+    weight: 8
+    health_check_url: "/health"
+    timeout: 30
+    max_connections: 150
+    enabled: true
+    metadata:
+      gateway_type: "secondary"
+      rate_limit: "800/min"
+      caching_enabled: true
+
+# Health check configuration
+health_checks:
+  interval: 30                    # Health check frequency in seconds
+  timeout: 10                     # Request timeout in seconds
+  retries: 3                      # Number of retry attempts
+  failure_threshold: 3            # Failures before marking unhealthy
+  success_threshold: 2            # Successes before marking healthy
+  expected_status_codes: [200, 401]  # Acceptable HTTP status codes
+
+  # Custom health check configurations per endpoint type
+  custom_checks:
+    azure_openai:
+      - name: "model_availability"
+        type: "api_call"
+        endpoint: "/v1/models"
+        expected_response_contains: "gpt"
+        
+    azure_apim:
+      - name: "gateway_status"
+        type: "api_call" 
+        endpoint: "/health"
+        expected_status: 200
+
+# Load balancer configuration
+load_balancer:
+  algorithm: "priority_with_fallback"  # priority, round_robin, least_connections, weighted, priority_with_fallback
+  sticky_sessions: false
+  connection_pooling: true
+  request_timeout: 30
+  
+  retry_policy:
+    max_retries: 3
+    backoff_strategy: "exponential"  # linear, exponential, fixed
+    base_delay: 1.0
+    max_delay: 60.0
+    jitter: true
+    retry_codes: [500, 502, 503, 504, 429]
+
+# Circuit breaker configuration
+circuit_breaker:
+  failure_threshold: 5             # Failures before opening circuit
+  recovery_timeout: 60             # Seconds before attempting recovery
+  success_threshold: 3             # Successes needed to close circuit
+  half_open_max_calls: 5          # Max calls in half-open state
+
+# Monitoring and alerting
+monitoring:
+  metrics_enabled: true
+  metrics_interval: 60            # Metrics collection interval in seconds
+  
+  alerts:
+    - name: "endpoint_down"
+      condition: "endpoint_health == false"
+      duration: "2m"
+      action: "log_alert"
+      
+    - name: "high_error_rate"
+      condition: "error_rate > 5%"
+      duration: "5m"
+      action: "log_alert"
+      
+    - name: "slow_response"
+      condition: "avg_response_time > 10s"
+      duration: "3m"
+      action: "log_alert"
+
+# Security configuration
+security:
+  tls_verify: true
+  cert_validation: true
+  api_key_rotation: true
+  key_rotation_interval: "24h"
+  
+  # Network security
+  allowed_ips: []                 # Empty means all IPs allowed
+  blocked_ips: []
+  
+  # Audit logging
+  audit_logging: true
+  log_requests: true
+  log_responses: false            # Don't log response bodies for security

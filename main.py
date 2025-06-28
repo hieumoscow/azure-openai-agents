@@ -10,29 +10,64 @@ from agents.tracing.processors import ConsoleSpanExporter, BatchTraceProcessor
 from agents.extensions import handoff_filters
 import logfire
 
+# Import service discovery components
+from service_discovery_client import (
+    create_service_discovery_client, 
+    create_fallback_client,
+    check_service_health
+)
+
 # logging.basicConfig(level=logging.INFO, 
 #                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 # https://github.com/openai/openai-agents-python/pull/61/files
 
 load_dotenv()
 
-azure_openai_client = AsyncAzureOpenAI(
-    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-    api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-    azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT")
-)
+# Global client variable
+openai_client = None
 
-azure_apim_openai_client = AsyncAzureOpenAI(
-    default_headers={"Ocp-Apim-Subscription-Key": os.getenv("AZURE_APIM_OPENAI_SUBSCRIPTION_KEY")},
-    api_key=os.getenv("AZURE_APIM_OPENAI_SUBSCRIPTION_KEY"),
-    api_version=os.getenv("AZURE_APIM_OPENAI_API_VERSION"),
-    azure_endpoint=os.getenv("AZURE_APIM_OPENAI_ENDPOINT")
-)
-
-openai_client = azure_openai_client
-set_default_openai_client(openai_client)
+async def initialize_openai_client():
+    """Initialize OpenAI client with service discovery or fallback to traditional approach"""
+    global openai_client
+    
+    try:
+        # Try to create service discovery-enabled client
+        if os.getenv("SERVICE_DISCOVERY_ENABLED", "false").lower() == "true":
+            logger.info("Initializing OpenAI client with service discovery...")
+            sd_client = await create_service_discovery_client("azure_openai")
+            
+            if sd_client:
+                openai_client = sd_client
+                logger.info("Service discovery client initialized successfully")
+                
+                # Log service health status
+                try:
+                    health_status = await check_service_health("azure_openai")
+                    logger.info(f"Azure OpenAI service health: {health_status['healthy_endpoints']}/{health_status['total_endpoints']} endpoints healthy")
+                except Exception as e:
+                    logger.warning(f"Could not check service health: {e}")
+                
+                set_default_openai_client(openai_client)
+                return
+        
+        # Fallback to traditional client creation
+        logger.info("Using traditional OpenAI client configuration...")
+        openai_client = await create_fallback_client()
+        set_default_openai_client(openai_client)
+        logger.info("Traditional OpenAI client initialized successfully")
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize OpenAI client: {e}")
+        # Final fallback - create basic client with environment variables
+        logger.info("Using basic fallback client...")
+        openai_client = AsyncAzureOpenAI(
+            api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+            api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-08-01-preview"),
+            azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+            azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT")
+        )
+        set_default_openai_client(openai_client)
 
 os.environ["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"]= "http://0.0.0.0:4318/v1/traces"
 
@@ -151,9 +186,18 @@ customer_service_agent = Agent(
 
 
 async def main():
+    # Initialize OpenAI client with service discovery
+    await initialize_openai_client()
+    
     # Trace the entire run as a single workflow
     with trace(workflow_name="Banking Assistant Demo"):
         print("\n=== Banking Assistant Demo ===\n")
+        
+        # Log current endpoint information if using service discovery
+        if hasattr(openai_client, 'get_current_endpoint_info'):
+            endpoint_info = openai_client.get_current_endpoint_info()
+            if endpoint_info:
+                print(f"Using endpoint: {endpoint_info['name']} ({endpoint_info['endpoint']}) - Status: {endpoint_info['status']}")
         
         # 1. Send a regular message to the general agent
         print("Step 1: Initial greeting")
@@ -220,6 +264,14 @@ async def main():
         print(f"\nResponse: {result.final_output}\n")
 
     print("\n=== Demo Complete ===\n")
+    
+    # Cleanup service discovery if used
+    if hasattr(openai_client, 'service_discovery'):
+        try:
+            await openai_client.service_discovery.shutdown()
+            logger.info("Service discovery shutdown completed")
+        except Exception as e:
+            logger.error(f"Error during service discovery shutdown: {e}")
 
 
 if __name__ == "__main__":
