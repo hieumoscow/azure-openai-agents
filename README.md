@@ -42,6 +42,79 @@ The agents have access to the following tools:
 - `check_account_balance`: Retrieves the balance for a given account number
 - `calculate_loan_payment`: Calculates monthly payments for a loan based on principal, interest rate, and term
 
+## Getting Started
+
+### Quick Start with Service Discovery
+
+1. **Clone this repository**
+   ```bash
+   git clone <repository-url>
+   cd azure-openai-agents
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Configure service discovery**
+   
+   Copy the sample environment file:
+   ```bash
+   cp .env.sample .env
+   ```
+   
+   Edit `.env` with your Azure OpenAI credentials:
+   ```bash
+   # Enable service discovery for production-grade resilience
+   SERVICE_DISCOVERY_ENABLED=true
+   
+   # Primary Azure OpenAI endpoint
+   AZURE_OPENAI_ENDPOINT=https://your-primary.openai.azure.com
+   AZURE_OPENAI_API_KEY=your_primary_api_key
+   
+   # Secondary endpoint for failover
+   AZURE_OPENAI_SECONDARY_ENDPOINT=https://your-secondary.openai.azure.com
+   AZURE_OPENAI_SECONDARY_KEY=your_secondary_api_key
+   
+   # Optional: APIM Gateway
+   AZURE_APIM_OPENAI_ENDPOINT=https://your-apim.azure-api.net/openai/api/
+   AZURE_APIM_OPENAI_SUBSCRIPTION_KEY=your_apim_subscription_key
+   ```
+
+4. **Run the application**
+   ```bash
+   python main.py
+   ```
+
+5. **Test service discovery** (optional)
+   ```bash
+   # Check service health
+   python -m service_discovery_client health-status
+   
+   # Run interactive demo
+   python demo_service_discovery.py
+   
+   # Run validation tests
+   python test_service_discovery.py
+   ```
+
+### Traditional Setup (without service discovery)
+
+For simple development or testing, you can use the traditional single-endpoint setup:
+
+```bash
+# Disable service discovery
+SERVICE_DISCOVERY_ENABLED=false
+
+# Single Azure OpenAI endpoint
+AZURE_OPENAI_API_KEY=your_api_key
+AZURE_OPENAI_ENDPOINT=https://your-aoai.openai.azure.com
+AZURE_OPENAI_DEPLOYMENT=gpt-4o
+```
+
+## Setup
+
 ## Setup
 
 1. Clone this repository
@@ -54,6 +127,44 @@ The agents have access to the following tools:
    ```
    python main.py
    ```
+
+## Service Discovery Commands
+
+The application includes several utility commands for managing and monitoring service discovery:
+
+### Health Status Monitoring
+```bash
+# Check health of all Azure OpenAI endpoints
+python -m service_discovery_client health-status azure_openai
+
+# Check health of APIM endpoints
+python -m service_discovery_client health-status azure_apim
+
+# Test specific endpoint connectivity
+python -m service_discovery_client test-endpoint azure_openai primary
+```
+
+### Configuration Management
+```bash
+# View current service discovery configuration
+python -m service_discovery_client show-config
+
+# Run comprehensive validation tests
+python test_service_discovery.py
+
+# Run interactive demo
+python demo_service_discovery.py
+```
+
+### Debugging
+```bash
+# Enable debug logging
+export LOG_LEVEL=DEBUG
+python main.py
+
+# Monitor real-time endpoint health
+watch -n 5 "python -m service_discovery_client health-status azure_openai"
+```
 
 ## Environment Variables
 
@@ -174,6 +285,25 @@ The circuit breaker pattern prevents cascade failures:
 - **Closed**: Normal operation, requests flow through
 - **Open**: Endpoint marked as failed, requests routed to other endpoints
 - **Half-Open**: Testing endpoint recovery with limited requests
+
+## Project Structure
+
+```
+azure-openai-agents/
+├── main.py                          # Main application entry point
+├── service_discovery.py             # Core service discovery implementation
+├── service_discovery_client.py      # Service discovery client adapter
+├── fixed_openai_agents.py          # OpenTelemetry instrumentation fixes
+├── test_service_discovery.py        # Comprehensive test suite
+├── demo_service_discovery.py        # Interactive demonstration
+├── requirements.txt                 # Python dependencies
+├── .env.sample                      # Environment configuration template
+├── docs/
+│   └── SERVICE_DISCOVERY.md        # Detailed service discovery documentation
+├── config/
+│   └── service_endpoints.yaml      # Example endpoint configuration
+└── otel-collector-config.yaml      # OpenTelemetry collector configuration
+```
 
 ## Known Issues
 
