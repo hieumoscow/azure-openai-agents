@@ -9,6 +9,25 @@ This project demonstrates the use of OpenAI's Agents framework to create a set o
 - **Investment Specialist**: An agent that assists customers with investment options and portfolio management
 - **Customer Service Agent**: Handles general inquiries and directs customers to specialists as needed
 
+## Security Features (Compliance Control C9262)
+
+🔒 **Authentication & Authorization**
+- **API Key Authentication**: Secure user authentication via API keys
+- **Role-Based Access Control (RBAC)**: Admin, Teller, and Customer roles with distinct permissions
+- **Account-Level Authorization**: Users can only access accounts they own or are assigned to
+- **Session Management**: Token-based sessions with configurable expiration
+
+🛡️ **Security Controls**
+- **Input Validation**: Comprehensive validation and sanitization of all user inputs
+- **Audit Logging**: Complete security event logging for compliance and monitoring
+- **Secure Configuration**: Environment-based configuration with validation
+- **Error Handling**: Secure error messages that don't leak sensitive information
+
+📋 **Compliance**
+- **Documentation**: Comprehensive security documentation ([SECURITY.md](SECURITY.md))
+- **Best Practices**: Implementation follows banking security standards
+- **Configuration Validation**: Automatic validation of security settings
+
 ## Agent Handoff System
 
 The demo showcases the handoff functionality between agents:
@@ -29,10 +48,33 @@ The agents have access to the following tools:
    pip install -r requirements.txt
    ```
 3. Create a `.env` file based on the `.env.sample` template and add your Azure OpenAI API credentials
-4. Run the demo:
+4. **Security Setup**: Configure authentication API keys in your `.env` file:
    ```
+   # Security Configuration - Use secure keys in production!
+   ADMIN_API_KEY=your-secure-admin-key
+   TELLER_API_KEY=your-secure-teller-key
+   CUSTOMER_API_KEY=your-secure-customer-key
+   ENVIRONMENT=production
+   ```
+5. Run the demo:
+   ```bash
+   # Original demo (without security)
    python main.py
+   
+   # Secure demo (with authentication and authorization)
+   python secure_main.py
    ```
+
+### Security Demo
+
+The secure version demonstrates:
+- API key authentication
+- Role-based access control
+- Input validation
+- Audit logging
+- Authorization policies
+
+See [SECURITY.md](SECURITY.md) for complete security documentation.
 
 ## Environment Variables
 
