@@ -1,0 +1,361 @@
+manifest:
+  version: "0.1.2"
+  schema: https://a2as.org/cert/schema
+  subject:
+    name: hieunhums/azure-openai-agents
+    source: https://github.com/hieunhums/azure-openai-agents
+    branch: main
+    commit: "8e0f52c7"
+    scope: [fixed_openai_agents.py, main.py]
+  issued:
+    by: A2AS.org
+    at: '2026-01-26T16:11:07Z'
+  signatures:
+    digest: sha256:8cLtGfKj5lOweIcE57P6N7YiuUvsTe6-hsMcyN6eugI
+    key: ed25519:RYJBLDOFsXFFxGhy5TBzC62kUosnU1kYOlHL57RCeUw
+    sig: ed25519:racYIBUjlscvi7dok3bcKdm_YEcvqRAsnnPU7yxxmlosG1hWL1k46SI3Pd14dTIZ6R2jP7mT3piy5Kso-XWlCw
+
+agents:
+  customer_service_agent:
+    type: instance
+    models: [gpt-4o]
+    tools: [check_account_balance]
+    params:
+      name: Customer Service Agent
+      handoffs: [loan_specialist_agent, investment_specialist_agent]
+      instructions: [You are a customer service agent at a bank., Help customers with general inquiries and direct them to
+          specialists when needed., 'If the customer asks about loans or mortgages, handoff to the Loan Specialist.', 'If
+          the customer asks about investments or portfolio management, handoff to the Investment Specialist.', 'Be professional,
+          friendly, and helpful.']
+  general_agent:
+    type: instance
+    models: [gpt-4o]
+    tools: [check_account_balance]
+    params:
+      name: Banking Assistant
+      instructions: [You are a helpful banking assistant. Be concise and professional.]
+  investment_specialist_agent:
+    type: instance
+    models: [gpt-4o]
+    tools: [calculate_investment_return]
+    params:
+      name: Investment Specialist
+      instructions: [You are an investment specialist at a bank., 'Help customers understand investment options, risk profiles,
+          and portfolio diversification.', Always consider the customer's financial goals and risk tolerance., Be professional
+          and explain investment concepts in clear terms.]
+  loan_specialist_agent:
+    type: instance
+    models: [gpt-4o]
+    tools: [calculate_loan_payment]
+    params:
+      name: Loan Specialist
+      instructions: [You are a loan specialist at a bank., 'Focus on helping customers understand loan options, calculate
+          payments, and assess affordability.', Always ask for income information to provide personalized advice., 'Be professional,
+          thorough, and explain financial terms clearly.']
+
+models:
+  gpt-4o:
+    type: literal
+    agents: [general_agent, loan_specialist_agent, investment_specialist_agent, customer_service_agent]
+    params:
+      provider: openai
+
+tools:
+  calculate_investment_return:
+    type: decorator
+    agents: [investment_specialist_agent]
+    params:
+      description: Calculate the future value of an investment.
+  calculate_loan_payment:
+    type: decorator
+    agents: [loan_specialist_agent]
+    params:
+      description: Calculate monthly payment for a loan.
+  check_account_balance:
+    type: decorator
+    agents: [general_agent, customer_service_agent]
+    params:
+      description: Check the balance of a bank account.
+
+teams:
+  customer_service_agent:
+    type: handoff
+    agents: [customer_service_agent, loan_specialist_agent, investment_specialist_agent]
+
+imports:
+  abstractmethod: abc.abstractmethod
+  add_trace_processor: agents.add_trace_processor
+  Agent: agents.Agent
+  agents: agents
+  AgentSpanData: agents.AgentSpanData
+  annotations: __future__.annotations
+  Any: typing.Any
+  AsyncAzureOpenAI: openai.AsyncAzureOpenAI
+  asyncio: asyncio
+  BatchTraceProcessor: agents.tracing.processors.BatchTraceProcessor
+  ConsoleSpanExporter: agents.tracing.processors.ConsoleSpanExporter
+  contextlib: contextlib
+  contextvars: contextvars
+  CustomSpanData: agents.CustomSpanData
+  dataclass: dataclasses.dataclass
+  function_tool: agents.function_tool
+  FunctionSpanData: agents.FunctionSpanData
+  GenerationSpanData: agents.GenerationSpanData
+  Generic: typing.Generic
+  GuardrailSpanData: agents.GuardrailSpanData
+  handle_internal_errors: logfire._internal.utils.handle_internal_errors
+  handoff: agents.handoff
+  handoff_filters: agents.extensions.handoff_filters
+  HandoffInputData: agents.HandoffInputData
+  HandoffSpanData: agents.HandoffSpanData
+  inspect: inspect
+  load_dotenv: dotenv.load_dotenv
+  log_internal_error: logfire._internal.utils.log_internal_error
+  Logfire: logfire.Logfire
+  logfire: logfire
+  logfire_format: logfire._internal.formatter.logfire_format
+  LogfireSpan: logfire.LogfireSpan
+  logging: logging
+  ModelSettings: agents.ModelSettings
+  NOOP_SCRUBBER: logfire._internal.scrubbing.NOOP_SCRUBBER
+  NoOpSpan: agents.tracing.spans.NoOpSpan
+  NoOpTrace: agents.tracing.traces.NoOpTrace
+  OpenAIChatCompletionsModel: agents.OpenAIChatCompletionsModel
+  OpenAIResponsesModel: agents.models.openai_responses.OpenAIResponsesModel
+  os: os
+  Response: openai.types.responses.Response
+  response_span: agents.tracing.response_span
+  ResponseSpanData: agents.tracing.ResponseSpanData
+  Runner: agents.Runner
+  Scope: agents.tracing.scope.Scope
+  Self: typing_extensions.Self
+  set_default_openai_client: agents.set_default_openai_client
+  set_tracing_disabled: agents.set_tracing_disabled
+  set_tracing_export_api_key: agents.set_tracing_export_api_key
+  Span: agents.Span
+  SpanData: agents.tracing.spans.SpanData
+  SpanError: agents.tracing.spans.SpanError
+  sys: sys
+  Trace: agents.Trace
+  trace: agents.trace
+  TracebackType: types.TracebackType
+  TraceProvider: agents.tracing.setup.TraceProvider
+  TSpanData: agents.tracing.spans.TSpanData
+  TYPE_CHECKING: typing.TYPE_CHECKING
+  TypeVar: typing.TypeVar
+
+functions:
+  __enter__:
+    type: sync
+    module: fixed_openai_agents
+    args: [self]
+    params:
+      returns: Self
+  __exit__:
+    type: sync
+    module: fixed_openai_agents
+    args: [self, exc_type, exc_val, exc_tb]
+  __getattr__:
+    type: sync
+    module: fixed_openai_agents
+    args: [self, item]
+  __init__:
+    type: sync
+    module: fixed_openai_agents
+    args: [self, wrapped, logfire_instance]
+  attach:
+    type: sync
+    module: fixed_openai_agents
+    args: [self]
+  attributes_from_span_data:
+    type: sync
+    module: fixed_openai_agents
+    args: [span_data, msg_template]
+    params:
+      returns: dict
+  banking_handoff_message_filter:
+    type: sync
+    module: main
+    args: [handoff_message_data]
+    params:
+      returns: HandoffInputData
+  calculate_investment_return:
+    type: tool
+    module: main
+    args: [principal, annual_return_rate, years]
+    params:
+      returns: float
+  calculate_loan_payment:
+    type: tool
+    module: main
+    args: [principal, interest_rate, years]
+    params:
+      returns: float
+  check_account_balance:
+    type: tool
+    module: main
+    args: [account_id]
+    params:
+      returns: float
+  create_span:
+    type: sync
+    module: fixed_openai_agents
+    args: [self, span_data, span_id, parent, disabled]
+    params:
+      returns: Span[TSpanData]
+  create_trace:
+    type: sync
+    module: fixed_openai_agents
+    args: [self, name, trace_id, disabled]
+    params:
+      returns: Trace
+  detach:
+    type: sync
+    module: fixed_openai_agents
+    args: [self]
+  end:
+    type: sync
+    module: fixed_openai_agents
+    args: [self, reset_current]
+  ended_at:
+    type: sync
+    module: fixed_openai_agents
+    args: [self]
+  error:
+    type: sync
+    module: fixed_openai_agents
+    args: [self]
+  export:
+    type: sync
+    module: fixed_openai_agents
+    args: [self]
+  finish:
+    type: sync
+    module: fixed_openai_agents
+    args: [self, reset_current]
+  get_basic_response_attributes:
+    type: sync
+    module: fixed_openai_agents
+    args: [response]
+  get_magic_response_attributes:
+    type: sync
+    module: fixed_openai_agents
+    params:
+      returns: dict
+  get_response_span_events:
+    type: sync
+    module: fixed_openai_agents
+    args: [span]
+  input_to_events:
+    type: sync
+    module: fixed_openai_agents
+    args: [inp]
+  install:
+    type: sync
+    module: fixed_openai_agents
+    args: [cls, logfire_instance]
+    params:
+      returns: None
+  main:
+    type: async
+    module: main
+  maybe_detach:
+    type: sync
+    module: fixed_openai_agents
+    args: [self, reset_current]
+  name:
+    type: sync
+    module: fixed_openai_agents
+    args: [self]
+    params:
+      returns: str
+  on_ending:
+    type: sync
+    module: fixed_openai_agents
+    args: [self]
+  parent_id:
+    type: sync
+    module: fixed_openai_agents
+    args: [self]
+  set_error:
+    type: sync
+    module: fixed_openai_agents
+    args: [self, error]
+    params:
+      returns: None
+  span_data:
+    type: sync
+    module: fixed_openai_agents
+    args: [self]
+    params:
+      returns: TSpanData
+  span_id:
+    type: sync
+    module: fixed_openai_agents
+    args: [self]
+    params:
+      returns: str
+  start:
+    type: sync
+    module: fixed_openai_agents
+    args: [self, mark_as_current]
+  started_at:
+    type: sync
+    module: fixed_openai_agents
+    args: [self]
+  trace_id:
+    type: sync
+    module: fixed_openai_agents
+    args: [self]
+    params:
+      returns: str
+  unknown_event:
+    type: sync
+    module: fixed_openai_agents
+    args: [inp]
+
+variables:
+  AZURE_APIM_OPENAI_API_VERSION:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [main]
+  AZURE_APIM_OPENAI_ENDPOINT:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [main]
+  AZURE_APIM_OPENAI_SUBSCRIPTION_KEY:
+    type: env
+    params:
+      caller: [os.getenv, AsyncAzureOpenAI]
+      path: [main]
+  AZURE_OPENAI_API_KEY:
+    type: env
+    params:
+      caller: [os.getenv, AsyncAzureOpenAI]
+      path: [main]
+  AZURE_OPENAI_API_VERSION:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [main]
+  AZURE_OPENAI_DEPLOYMENT:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [main]
+  AZURE_OPENAI_ENDPOINT:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [main]
+  OPENAI_API_KEY:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [main]
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:
+    type: env
+    params:
+      caller: [os.environ]
